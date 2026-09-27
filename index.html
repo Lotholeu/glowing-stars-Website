@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Neon Particles</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="intro">
+        <p class="eyebrow">INTERAKTIVE KUNST</p>
+        <h1>Neon <span>Particles</span></h1>
+        <p class="subtitle">Wähle eine Form – tausende leuchtende Punkte finden ihren Platz.</p>
+      </header>
+
+      <nav class="shape-picker" aria-label="Form auswählen">
+        <button class="shape-button active" data-shape="heart" aria-pressed="true"><span>♥</span> Herz</button>
+        <button class="shape-button" data-shape="star" aria-pressed="false"><span>★</span> Stern</button>
+        <button class="shape-button" data-shape="circle" aria-pressed="false"><span>●</span> Kreis</button>
+        <button class="shape-button" data-shape="wave" aria-pressed="false"><span>〰</span> Welle</button>
+        <button class="shape-button" data-shape="spiral" aria-pressed="false"><span>◌</span> Spiral</button>
+      </nav>
+
+      <section class="particle-stage" aria-label="Animiertes Punktebild">
+        <canvas id="particleCanvas"></canvas>
+        <div class="stage-glow"></div>
+        <p class="stage-label">TIPPE AUF EINE FORM</p>
+      </section>
+
+      <footer>MADE WITH LIGHT <span>✦</span></footer>
+    </main>
+    <script src="script.js"></script>
+  </body>
+</html>

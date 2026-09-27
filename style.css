@@ -1,0 +1,59 @@
+:root {
+  color-scheme: dark;
+  --ink: #03081c;
+  --panel: rgba(8, 20, 57, 0.68);
+  --line: rgba(116, 168, 255, 0.17);
+  --blue: #74b8ff;
+  --text: #e8f2ff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  overflow-x: hidden;
+  color: var(--text);
+  font-family: "Outfit", system-ui, sans-serif;
+  background:
+    radial-gradient(circle at 50% -15%, #123e85 0, transparent 35rem),
+    radial-gradient(circle at 0% 75%, #0c1c54 0, transparent 32rem),
+    var(--ink);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  opacity: .28;
+  background-image: linear-gradient(rgba(112, 164, 255, .055) 1px, transparent 1px), linear-gradient(90deg, rgba(112, 164, 255, .055) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse at center, black, transparent 75%);
+}
+
+.app-shell { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 70px 0 28px; text-align: center; }
+.intro { margin-bottom: 30px; }
+.eyebrow { margin: 0 0 9px; color: #80b9ff; font-size: .72rem; font-weight: 700; letter-spacing: .25em; }
+h1 { margin: 0; font-size: clamp(2.6rem, 7vw, 5.2rem); line-height: .9; letter-spacing: -.065em; }
+h1 span { color: #8ec5ff; text-shadow: 0 0 18px #3d7cff, 0 0 50px #1f48c9; }
+.subtitle { max-width: 480px; margin: 19px auto 0; color: #a9bddf; font-size: clamp(.95rem, 2vw, 1.08rem); }
+
+.shape-picker { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 24px; }
+.shape-button {
+  border: 1px solid var(--line); border-radius: 999px; padding: 10px 17px;
+  color: #b7cdf0; background: rgba(8, 24, 66, .64); cursor: pointer;
+  font: 600 .91rem/1 "Outfit", sans-serif; transition: .25s ease;
+}
+.shape-button span { margin-right: 5px; color: #72afff; font-size: 1.15em; }
+.shape-button:hover { transform: translateY(-2px); border-color: #609dff; color: white; box-shadow: 0 0 20px rgba(52, 119, 255, .22); }
+.shape-button.active { color: #fff; border-color: #ff75b4; background: rgba(127, 25, 91, .4); box-shadow: 0 0 14px rgba(255, 69, 158, .36), inset 0 0 18px rgba(255, 70, 160, .12); }
+.shape-button.active span { color: #ff78b6; text-shadow: 0 0 10px #ff318c; }
+
+.particle-stage { position: relative; height: min(60vw, 600px); min-height: 360px; overflow: hidden; border: 1px solid var(--line); border-radius: 28px; background: radial-gradient(circle at center, rgba(21, 65, 139, .27), rgba(3, 8, 28, .2) 60%); box-shadow: inset 0 0 60px rgba(45, 105, 255, .08), 0 25px 70px rgba(0, 0, 0, .3); }
+#particleCanvas { width: 100%; height: 100%; display: block; }
+.stage-glow { position: absolute; inset: -20%; pointer-events: none; background: radial-gradient(circle at 50% 50%, rgba(65, 125, 255, .11), transparent 35%); mix-blend-mode: screen; }
+.stage-label { position: absolute; bottom: 17px; left: 0; right: 0; margin: 0; color: rgba(181, 212, 255, .4); font-size: .64rem; font-weight: 600; letter-spacing: .2em; pointer-events: none; }
+footer { margin-top: 24px; color: #6585b5; font-size: .68rem; font-weight: 600; letter-spacing: .2em; }
+footer span { color: #75b4ff; text-shadow: 0 0 12px #4a8dff; }
+@media (max-width: 520px) { .app-shell { padding-top: 45px; } .particle-stage { min-height: 330px; border-radius: 20px; } .shape-button { padding: 9px 12px; } }
