@@ -11,6 +11,12 @@
   </head>
   <body>
     <main class="app-shell">
+      <nav class="page-tools" aria-label="Seiten-Einstellungen">
+        <label>Neon-Akzent <select id="pageAccent"><option value="blue">Electric Blue</option><option value="violet">Violett</option><option value="mint">Mint</option></select></label>
+        <button id="quietMode" class="action-button" aria-pressed="false">Ⅱ Ruhemodus</button>
+        <button id="surpriseMix" class="action-button">✦ Zufalls-Mix</button>
+        <a class="section-link" href="#labTitle">Zu den Widgets ↓</a>
+      </nav>
       <header class="intro">
         <p class="eyebrow">INTERAKTIVE KUNST</p>
         <h1>Neon <span>Particles</span></h1>
@@ -47,9 +53,29 @@
         <button id="randomize" class="action-button" type="button"><span>✦</span> Zufall</button>
       </section>
 
+      <details class="studio-panel">
+        <summary>✦ Kreativ-Werkzeuge <span>Text, Bewegung & Sandbox</span></summary>
+        <div class="studio-grid">
+          <form id="textForm" class="text-tool">
+            <label for="particleText">Dein Text aus Punkten</label>
+            <div><input id="particleText" maxlength="12" value="NEON" aria-label="Text, maximal 12 Zeichen" /><button class="action-button" type="submit">Anzeigen</button></div>
+          </form>
+          <label>Bewegungstempo <input id="motionSpeed" type="range" min="25" max="200" value="100" step="5" /></label>
+          <label>Punktgröße <input id="pointSize" type="range" min="50" max="200" value="100" step="5" /></label>
+          <label>Sandbox-Werkzeug <select id="brushTool"><option value="grab">Greifen & ziehen</option><option value="attract">Magnet · anziehen</option><option value="push">Pinsel · verdrängen</option></select></label>
+          <label>Pinselradius <input id="brushRadius" type="range" min="25" max="160" value="95" step="5" /></label>
+          <div class="studio-actions"><button id="pauseMain" class="action-button" aria-pressed="false">Ⅱ Pause</button><button id="scatterMain" class="action-button">✧ Aufwirbeln</button><button id="saveImage" class="action-button">↓ PNG speichern</button></div>
+        </div>
+        <p id="studioStatus" role="status">Wähle ein Werkzeug und aktiviere die Sandbox zum Zeichnen.</p>
+      </details>
+
       <section class="particle-stage" aria-label="Animiertes Punktebild">
         <canvas id="particleCanvas"></canvas>
         <div class="stage-glow"></div>
+        <div class="sandbox-tools">
+          <button id="sandboxToggle" class="action-button" type="button" aria-pressed="false">✎ Sandbox</button>
+          <button id="sandboxReset" class="action-button" type="button" hidden>Form zurücksetzen</button>
+        </div>
         <div class="stage-status"><span class="status-dot"></span><span id="shapeName">HERZ</span></div>
         <p class="stage-label">BEWEGE DIE MAUS DURCH DIE PARTIKEL</p>
       </section>
@@ -70,7 +96,12 @@
               <span class="live-badge"><i></i> LIVE</span>
             </div>
             <canvas id="fireCanvas" aria-label="Animiertes Feuer aus Punkten"></canvas>
-            <p class="widget-note">Schnelle Funken · immer in Bewegung</p>
+            <div class="fire-controls">
+              <label for="fireSize">Feuergröße <output id="fireSizeValue" for="fireSize">100 %</output></label>
+              <input id="fireSize" type="range" min="40" max="140" step="5" value="100" />
+              <label for="fireSpeed">Geschwindigkeit <output id="fireSpeedValue" for="fireSpeed">1,0×</output></label>
+              <input id="fireSpeed" type="range" min="25" max="250" step="5" value="100" />
+            </div>
           </article>
 
           <article class="particle-widget timer-widget">
@@ -78,7 +109,10 @@
               <div><span class="widget-icon timer-icon">◷</span><h3>Particle Timer</h3></div>
               <span class="widget-tag">FOCUS</span>
             </div>
-            <canvas id="timerCanvas" aria-label="Timer aus Punkten"></canvas>
+            <canvas id="timerCanvas" aria-label="Sanduhr und Timer aus Punkten"></canvas>
+            <button id="flipHourglass" class="mini-button">⌛ Umdrehen & neu starten</button>
+            <label class="focus-setting" for="focusMinutes">Fokusdauer <select id="focusMinutes"><option value="1">1 Minute</option><option value="5">5 Minuten</option><option value="15">15 Minuten</option><option value="25">25 Minuten</option><option value="45">45 Minuten</option></select></label>
+            <p id="focusStatus" class="widget-note" role="status">Bereit für deinen Fokus</p>
             <div class="timer-actions">
               <button id="timerStart" class="mini-button" type="button">▶ Start</button>
               <button id="timerAdd" class="mini-button" type="button">+ 1 Min</button>
@@ -94,10 +128,71 @@
             <canvas id="waveCanvas" aria-label="Fließende Energiewelle aus Punkten"></canvas>
             <button id="waveBoost" class="boost-button" type="button"><span>ϟ</span> Energie-Impuls</button>
           </article>
+          <article class="particle-widget">
+            <div class="widget-head"><div><span class="widget-icon timer-icon">✦</span><h3>Sternenflug</h3></div></div>
+            <canvas id="starsCanvas" aria-label="Langsamer Flug durch einen Sternenhimmel aus Punkten"></canvas>
+            <p class="widget-note">Ein Moment zwischen den Sternen</p>
+          </article>
+          <article class="particle-widget">
+            <div class="widget-head"><div><span class="widget-icon timer-icon">✓</span><h3>Deine Aufgaben</h3></div></div>
+            <canvas id="rainCanvas" aria-label="Aufgabenfortschritt als Punktering"></canvas>
+            <p id="taskStatus" class="widget-note" role="status">Noch keine Aufgaben</p>
+            <form id="taskForm" class="task-form"><input id="taskText" maxlength="100" required placeholder="Was möchtest du erledigen?" aria-label="Neue Aufgabe" /><button class="mini-button">＋</button></form>
+            <ul id="taskList" class="task-list"></ul>
+            <p id="taskStorage" class="widget-note">Lokal in diesem Browser gespeichert</p>
+          </article>
+          <article class="particle-widget">
+            <div class="widget-head"><div><span class="widget-icon wave-icon">◷</span><h3>Stoppuhr</h3></div></div>
+            <canvas id="auroraCanvas" aria-label="Stoppuhr aus Punkten"></canvas>
+            <div class="timer-actions"><button id="stopwatchStart" class="mini-button">Start</button><button id="stopwatchLap" class="mini-button" disabled>Runde</button><button id="stopwatchReset" class="mini-button">Reset</button></div>
+            <ol id="lapList" class="lap-list" aria-label="Letzte zehn Rundenzeiten"></ol>
+          </article>
+          <article class="particle-widget">
+            <div class="widget-head"><div><span class="widget-icon wave-icon">✺</span><h3>Galaxie</h3></div></div>
+            <canvas id="galaxyCanvas" aria-label="Rotierende Partikel-Galaxie"></canvas>
+            <div class="fire-controls">
+              <label for="galaxySize">Ausdehnung <output id="galaxySizeValue">100 %</output></label>
+              <input id="galaxySize" type="range" min="40" max="140" value="100" step="5" />
+              <label for="galaxySpeed">Rotation <output id="galaxySpeedValue">1×</output></label>
+              <input id="galaxySpeed" type="range" min="0" max="200" value="100" step="5" />
+            </div>
+          </article>
+          <article class="particle-widget">
+            <div class="widget-head"><div><span class="widget-icon timer-icon">◎</span><h3>Orbital</h3></div></div>
+            <canvas id="orbitCanvas" aria-label="Leuchtende Punkte auf elliptischen Umlaufbahnen"></canvas>
+            <div class="fire-controls">
+              <label for="orbitCount">Umlaufbahnen <output id="orbitCountValue">4</output></label>
+              <input id="orbitCount" type="range" min="2" max="8" value="4" step="1" />
+              <label for="orbitSpeed">Tempo <output id="orbitSpeedValue">1×</output></label>
+              <input id="orbitSpeed" type="range" min="0" max="200" value="100" step="5" />
+            </div>
+          </article>
+          <article class="particle-widget">
+            <div class="widget-head"><div><span class="widget-icon timer-icon">◷</span><h3>Live-Uhr</h3></div></div>
+            <canvas id="clockCanvas" aria-label="Aktuelle lokale Uhrzeit aus Punkten"></canvas>
+            <p id="clockDate" class="widget-note">Lokale Zeit deines Geräts</p>
+          </article>
+          <article class="particle-widget">
+            <div class="widget-head"><div><h3>Partikel-Netz</h3></div></div>
+            <canvas id="networkCanvas" aria-label="Bewegliche Punkte mit Verbindungen"></canvas>
+            <label class="fire-controls">Verbindungsweite<input id="networkRange" type="range" min="30" max="160" value="85" /></label>
+          </article>
+          <article class="particle-widget">
+            <div class="widget-head"><div><h3>Meteorschauer</h3></div></div>
+            <canvas id="meteorCanvas" aria-label="Antippen erzeugt eine Sternschnuppe"></canvas>
+            <button id="meteorBurst" class="mini-button">✦ Sternschnuppen auslösen</button>
+          </article>
+          <article class="particle-widget">
+            <div class="widget-head"><div><h3>Sternensand</h3></div></div>
+            <canvas id="sandCanvas" aria-label="Links gedrückt halten zum Streuen, rechts zum Saugen"></canvas>
+            <div class="timer-actions"><button id="sandPour" class="mini-button" aria-pressed="true">Streuen</button><button id="sandSuck" class="mini-button" aria-pressed="false">Saugen</button><button id="sandClear" class="mini-button">Leeren</button></div>
+            <p class="widget-note">LMB: Streuen · RMB: Saugen · Handy: Werkzeug wählen</p>
+          </article>
         </div>
       </section>
 
       <footer>MADE WITH LIGHT <span>✦</span></footer>
+      <a class="back-top" href="#" aria-label="Zurück nach oben">↑ Nach oben</a>
     </main>
     <script src="script.js"></script>
   </body>
