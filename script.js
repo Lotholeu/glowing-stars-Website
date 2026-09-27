@@ -464,7 +464,7 @@ function drawFire(delta) {
   fireWind *= Math.exp(-delta * 1.3);
   fireHeat += (Math.min(1.7, fireScale + fireStoke) - fireHeat) * (1 - Math.exp(-delta * 1.8));
   adjustFireCount();
-  delta *= fireRate;
+  delta *= fireRate * .4;
   fireTime += delta;
   const w = fireCanvas.viewWidth, h = fireCanvas.viewHeight;
   fireCtx.clearRect(0, 0, w, h);
@@ -717,7 +717,7 @@ const relaxWidgets = ['stars', 'rain', 'aurora', 'galaxy', 'orbit', 'clock'].map
   const surface = document.querySelector('#' + kind + 'Canvas');
   return {
     kind, canvas: surface, ctx: surface.getContext('2d'), time: 0,
-    points: Array.from({ length: lowPowerDevice ? 150 : 240 }, () => ({
+    points: Array.from({ length: kind === 'galaxy' ? (lowPowerDevice ? 550 : 900) : lowPowerDevice ? 150 : 240 }, () => ({
       x: Math.random(), y: Math.random(), z: Math.random(),
       speed: .08 + Math.random() * .12
     }))
@@ -756,13 +756,17 @@ function drawRelaxWidgets(delta) {
         context.globalAlpha = .35 + point.z * .65;
         radius = .8 + point.z;
       } else if (item.kind === 'galaxy') {
-        const distance = Math.sqrt(point.x) * Math.min(w, h) * .3 * relaxSettings.galaxySize / 100;
-        const angle = (index % 3) * Math.PI * 2 / 3 + point.x * 5 + item.time * .22 + point.y * .5;
-        x = w / 2 + Math.cos(angle) * distance;
-        y = h / 2 + Math.sin(angle) * distance * .72;
-        context.fillStyle = index % 3 ? '#ab8dff' : '#85e8ff';
-        context.globalAlpha = .45 + point.z * .55;
-        radius = 1 + point.z;
+        const core = index % 4 === 0;
+        const radial = core ? point.x ** 1.5 * .22 : .1 + point.x ** .7 * .9;
+        const distance = radial * Math.min(w * .43, h * .68) * relaxSettings.galaxySize / 100;
+        const angle = core ? point.y * Math.PI * 2 : (index % 2) * Math.PI
+          + Math.log(1 + radial * 9) * 2.1 + (point.y - .5) * (.25 + radial * .4) + item.time * .08;
+        const gx = Math.cos(angle) * distance, gy = Math.sin(angle) * distance * .48;
+        x = w / 2 + gx * .97 - gy * .24;
+        y = h / 2 + gx * .24 + gy * .97 + (point.z - .5) * distance * .06;
+        context.fillStyle = radial < .23 ? '#fff0c8' : index % 7 === 0 ? '#ddb0d4' : '#a8c9ef';
+        context.globalAlpha = .3 + point.z * .65;
+        radius = core ? .8 + point.z * .55 : .5 + point.z * .85;
       } else if (item.kind === 'orbit') {
         const lane = index % relaxSettings.orbitCount;
         const angle = point.x * Math.PI * 2 + item.time * (.25 + lane * .06);
@@ -792,10 +796,11 @@ function drawRelaxWidgets(delta) {
 
 function drawClock(item, customText = null) {
   const now = new Date();
-  const text = customText || [now.getHours(), now.getMinutes(), now.getSeconds()]
+  const clockHour = document.querySelector('#clockFormat').value === '12' ? (now.getHours() % 12 || 12) : now.getHours();
+  const text = customText || [clockHour, now.getMinutes(), now.getSeconds()]
     .map(value => String(value).padStart(2, '0')).join(':');
   const context = item.ctx, w = item.canvas.viewWidth, h = item.canvas.viewHeight;
-  const step = Math.min((w - 24) / 27, (h - 24) / 5);
+  const step = Math.min((w - 16) / 27, (h - 24) / 5);
   let column = 0;
   context.fillStyle = '#87dfff';
   for (const char of text) {
@@ -804,7 +809,7 @@ function drawClock(item, customText = null) {
       const x = (w - 27 * step) / 2 + (column + ix + .5) * step;
       const y = (h - 5 * step) / 2 + (iy + .5) * step;
       context.beginPath();
-      context.arc(x, y, Math.max(.8, step * .23), 0, Math.PI * 2);
+      context.arc(x, y, Math.max(1.1, step * .34), 0, Math.PI * 2);
       context.fill();
     }));
     column += digitMap[char][0].length + 1;
@@ -868,13 +873,27 @@ function renderTasks(save = true) {
   const list = document.querySelector('#taskList');
   list.replaceChildren();
   tasks.forEach((task, index) => {
+    const filter = document.querySelector('#taskFilter').value;
+    if ((filter === 'open' && task.done) || (filter === 'done' && !task.done)) return;
     const row = document.createElement('li'), label = document.createElement('label');
     const check = document.createElement('input'), text = document.createElement('span'), remove = document.createElement('button');
     check.type = 'checkbox'; check.checked = task.done; text.textContent = task.text;
     check.addEventListener('change', () => { task.done = check.checked; renderTasks(); });
     remove.className = 'mini-button'; remove.textContent = '×'; remove.setAttribute('aria-label', 'Aufgabe löschen: ' + task.text);
     remove.addEventListener('click', () => { tasks.splice(index, 1); renderTasks(); });
-    label.append(check, text); row.append(label, remove); list.append(row);
+    const edit = document.createElement('button');
+    edit.className = 'mini-button'; edit.textContent = '✎'; edit.setAttribute('aria-label', 'Aufgabe bearbeiten');
+    edit.addEventListener('click', () => {
+      const field = document.createElement('input'); field.type = 'text'; field.value = task.text; field.maxLength = 100;
+      field.setAttribute('aria-label', 'Aufgabentext bearbeiten');
+      label.replaceWith(field); edit.disabled = true;
+      let committed = false;
+      const commit = () => { if (committed) return; committed = true; task.text = field.value.trim() || task.text; renderTasks(); };
+      field.addEventListener('blur', commit);
+      field.addEventListener('keydown', event => { if (event.key === 'Enter') commit(); if (event.key === 'Escape') { field.value = task.text; commit(); } });
+      field.focus(); field.select();
+    });
+    label.append(check, text); row.append(label, edit, remove); list.append(row);
   });
   document.querySelector('#taskStatus').textContent = tasks.length ? tasks.filter(t => t.done).length + ' von ' + tasks.length + ' erledigt' : 'Noch keine Aufgaben';
   if (save) try { localStorage.setItem('neon-tasks', JSON.stringify(tasks)); } catch { document.querySelector('#taskStorage').textContent = 'Speichern nicht verfügbar – nur für diesen Besuch.'; }
@@ -887,6 +906,7 @@ document.querySelector('#taskForm').addEventListener('submit', event => {
   tasks.push({ text: input.value.trim().slice(0, 100), done: false }); input.value = ''; renderTasks();
 });
 renderTasks(false);
+document.querySelector('#taskFilter').addEventListener('change', () => renderTasks(false));
 document.querySelector('#focusMinutes').addEventListener('change', event => {
   setTimerRunning(false);
   timerSeconds = Number(event.target.value) * 60;
@@ -1056,31 +1076,41 @@ timerCanvas.addEventListener('click', flipHourglass);
 document.querySelector('#flipHourglass').addEventListener('click', flipHourglass);
 function drawHourglass(w, h) {
   const total = Math.max(timerSeconds, Number(document.querySelector('#focusMinutes').value) * 60);
-  const remaining = Math.min(1, timerSeconds / total);
-  const cx = w / 2, top = h * .06, height = h * .57, half = Math.min(w * .24, height * .42);
+  const linearRemaining = Math.min(1, Math.max(0, timerSeconds / total));
+  // Beschleunigtes Füllen bei unveränderter Timerdauer.
+  const remaining = 1 - Math.pow(1 - linearRemaining, 2.4);
+  const cx = w / 2, top = h * .07, height = h * .59, half = Math.min(w * .23, height * .32);
+  const glassWidth = depth => half * (.055 + .945 * Math.pow(Math.abs(Math.cos(depth * Math.PI)), 1.35));
   const dot = (x, y, color, radius = 1.5) => {
     timerCtx.fillStyle = color; timerCtx.beginPath(); timerCtx.arc(x, y, radius, 0, Math.PI * 2); timerCtx.fill();
   };
-  for (let i = 0; i <= 30; i++) {
-    const t = i / 30, extent = half * Math.abs(2 * t - 1);
-    dot(cx - extent, top + t * height, '#648fbf');
-    dot(cx + extent, top + t * height, '#648fbf');
-    dot(cx - half + t * half * 2, top, '#97cfff');
-    dot(cx - half + t * half * 2, top + height, '#97cfff');
+  for (let i = 0; i <= 55; i++) {
+    const t = i / 55, extent = glassWidth(t);
+    dot(cx - extent, top + t * height, '#7aa6ca', .95);
+    dot(cx + extent, top + t * height, '#b4dfff', 1);
+    if (t > .06 && t < .35) dot(cx - extent + 3, top + t * height, '#bdeaff', .7);
+    dot(cx - half * 1.12 + t * half * 2.24, top - 3, '#d6bb8a', 1.3);
+    dot(cx - half * 1.12 + t * half * 2.24, top + height + 3, '#d6bb8a', 1.3);
   }
-  for (let i = 0; i < 150; i++) {
-    const u = ((i * 73) % 151) / 151, spread = ((i * 47) % 149) / 149 * 2 - 1;
-    if (i / 150 < remaining) {
-      const depth = .05 + u * .43;
-      dot(cx + spread * half * (1 - depth * 2) * .88, top + depth * height, '#ffdc8b');
-    } else {
-      const depth = .98 - u * .42 * (1 - remaining);
-      dot(cx + spread * half * (depth * 2 - 1) * .88, top + depth * height, '#ffb85f');
+  const spacing = Math.max(2.6, height / 48);
+  const surface = .5 * (1 - Math.sqrt(remaining));
+  for (let y = spacing; y < height - spacing; y += spacing) {
+    const depth = y / height;
+    const extent = glassWidth(depth) * .85;
+    for (let x = -extent; x <= extent; x += spacing) {
+      const mound = Math.max(0, 1 - Math.abs(x) / half);
+      const bottomSurface = 1 - Math.sqrt(1 - remaining) * (.24 + .25 * mound);
+      if ((depth < .49 && depth >= surface) || (depth > .51 && depth >= bottomSurface)) {
+        const grain = Math.sin(x * 12.3 + y * 4.7);
+        dot(cx + x + grain * .45, top + y, grain > .3 ? '#ffedb7' : depth < .5 ? '#ebc778' : '#d4a35c', Math.max(.8, spacing * .3));
+      }
     }
   }
-  if (timerInterval) for (let i = 0; i < 8; i++) {
-    const t = ((performance.now() / 1100 + i / 8) % 1);
-    dot(cx, top + height * (.5 + t * .43), '#ffe6b1', 1);
+  const flow = Math.pow(1 - linearRemaining, 1.4);
+  const streamCount = 2 + Math.round(flow * 12);
+  if (timerInterval) for (let i = 0; i < streamCount; i++) {
+    const t = ((performance.now() / 1100 + i / streamCount) % 1);
+    dot(cx + Math.sin(i * 9) * .8, top + height * (.5 + t * t * .43), '#ffe6b1', 1);
   }
 }
 
@@ -1094,9 +1124,11 @@ const network = playgrounds[0], meteors = playgrounds[1], sand = playgrounds[2];
 network.points = Array.from({ length: lowPowerDevice ? 35 : 55 }, () => ({
   x: Math.random(), y: Math.random(), vx: (Math.random() - .5) * .07, vy: (Math.random() - .5) * .07
 }));
+const meteorStars = Array.from({ length: 65 }, () => ({ x: Math.random(), y: Math.random(), brightness: .15 + Math.random() * .5, phase: Math.random() * 6 }));
 function launchMeteor(x = Math.random() * .7, y = Math.random() * .35) {
   if (meteors.points.length >= 24) return;
-  meteors.points.push({ x, y, life: 1, speed: .2 + Math.random() * .2 });
+  const angle = .35 + Math.random() * .22;
+  meteors.points.push({ x, y, age: 0, duration: .55 + Math.random() * .65, speed: .48 + Math.random() * .4, angle, trail: [] });
 }
 meteors.canvas.addEventListener('click', event => {
   const rect = meteors.canvas.getBoundingClientRect();
@@ -1130,6 +1162,7 @@ document.querySelector('#sandClear').addEventListener('click', () => sand.points
 let playgroundTime = performance.now();
 function drawPlaygrounds(now) {
   const dt = Math.min(.04, Math.max(0, (now - playgroundTime) / 1000)); playgroundTime = now;
+  drawAtmospheres(dt);
   for (const item of playgrounds) {
     if (document.hidden || quietMode || !shouldDraw(item.canvas)) continue;
     const c = item.ctx, w = item.canvas.viewWidth, h = item.canvas.viewHeight;
@@ -1152,37 +1185,291 @@ function drawPlaygrounds(now) {
         c.fillStyle = '#9bddff'; c.beginPath(); c.arc(p.x * w, p.y * h, 1.8, 0, Math.PI * 2); c.fill();
       });
     } else if (item.kind === 'meteor') {
-      item.delay -= dt; if (item.delay <= 0) { launchMeteor(); item.delay = 1 + Math.random() * 2; }
+      for (const star of meteorStars) {
+        c.globalAlpha = star.brightness * (.85 + .15 * Math.sin(now * .0007 + star.phase));
+        c.fillStyle = '#c4d5ef'; c.beginPath(); c.arc(star.x * w, star.y * h, .65, 0, Math.PI * 2); c.fill();
+      }
+      c.globalAlpha = 1;
+      item.delay -= dt; if (item.delay <= 0) { launchMeteor(); item.delay = 2 + Math.random() * 4; }
       item.points.forEach(p => {
-        p.x += p.speed * dt; p.y += p.speed * dt; p.life -= dt * .32;
-        for (let i = 0; i < 18; i++) {
-          c.globalAlpha = Math.max(0, p.life) * (1 - i / 18);
-          c.fillStyle = i < 3 ? '#eefaff' : '#8f9bff';
-          c.beginPath(); c.arc(p.x * w - i * 3, p.y * h - i * 3, i < 3 ? 1.8 : 1, 0, Math.PI * 2); c.fill();
+        p.age += dt;
+        if (p.age < p.duration) {
+          const ox = p.x, oy = p.y;
+          p.x += Math.cos(p.angle) * p.speed * dt;
+          p.y += Math.sin(p.angle) * p.speed * dt * w / h;
+          for (let j = 1; j <= 4; j++) p.trail.push({ x: ox + (p.x - ox) * j / 4, y: oy + (p.y - oy) * j / 4, age: 0 });
+        }
+        p.trail = p.trail.filter(t => (t.age += dt) < 1.1).slice(-240);
+        for (const t of p.trail) {
+          const fade = 1 - t.age / 1.1;
+          c.globalAlpha = fade * fade * .8;
+          c.fillStyle = t.age < .12 ? '#e7f4ff' : t.age < .4 ? '#a8c5de' : '#b98f68';
+          c.beginPath(); c.arc(t.x * w + Math.sin(t.y * 17 + now * .0003) * t.age * 2, t.y * h, .3 + fade * .9, 0, Math.PI * 2); c.fill();
+        }
+        if (p.age < p.duration) {
+          const light = Math.min(1, p.age / .1, (p.duration - p.age) / .2);
+          for (let r = 8; r > 0; r -= 2) {
+            c.globalAlpha = light * (r > 2 ? .08 : 1); c.fillStyle = '#eff9ff';
+            c.beginPath(); c.arc(p.x * w, p.y * h, r, 0, Math.PI * 2); c.fill();
+          }
         }
       });
-      item.points = item.points.filter(p => p.life > 0 && p.x < 1.3 && p.y < 1.3); c.globalAlpha = 1;
+      item.points = item.points.filter(p => p.age < p.duration + 1.15); c.globalAlpha = 1;
     } else {
       if (sandPointer?.mode === 'pour') {
-        sandEmission += dt * 100;
+        sandEmission += dt * Number(document.querySelector('#sandAmount').value);
         while (sandEmission >= 1 && item.points.length < 1400) {
-          item.points.push({ x: Math.max(0, Math.min(.999, sandPointer.x + (Math.random() - .5) * .04)), y: sandPointer.y, vy: 0 });
+          item.points.push({ x: Math.max(0, Math.min(.999, sandPointer.x + (Math.random() - .5) * .025)), y: sandPointer.y, vx: (Math.random() - .5) * .06, vy: .02, shade: Math.random() });
           sandEmission--;
         }
         sandEmission = Math.min(1, sandEmission);
       } else sandEmission = 0;
-      if (sandPointer?.mode === 'suck') item.points = item.points.filter(p => Math.hypot((p.x - sandPointer.x) * w, (p.y - sandPointer.y) * h) > 45);
+      if (sandPointer?.mode === 'suck') item.points = item.points.filter(p => Math.hypot((p.x - sandPointer.x) * w, (p.y - sandPointer.y) * h) > 6);
       const columns = Math.max(10, Math.floor(w / 4)), levels = new Array(columns).fill(0);
       item.points.sort((a, b) => b.y - a.y);
       item.points.forEach(p => {
-        const column = Math.min(columns - 1, Math.max(0, Math.floor(p.x * columns)));
+        const dx = sandPointer ? (sandPointer.x - p.x) * w : 0;
+        const dy = sandPointer ? (sandPointer.y - p.y) * h : 0;
+        const distance = Math.hypot(dx, dy);
+        const sucking = sandPointer?.mode === 'suck' && distance < 105;
+        p.vx = p.vx || 0;
+        if (sucking) {
+          const pull = 1600 * (1 - distance / 105) / Math.max(distance, 6);
+          p.vx += dx * pull * dt / w; p.vy += dy * pull * dt / h;
+        }
+        p.vx *= Math.exp(-dt * (sucking ? 4 : 2));
+        p.x = Math.max(.002, Math.min(.998, p.x + p.vx * dt));
+        let column = Math.min(columns - 1, Math.max(0, Math.floor(p.x * columns)));
         const floor = 1 - (levels[column] + 1) * 3 / h;
-        p.vy += dt * .65; p.y = Math.min(floor, p.y + p.vy * dt);
-        if (p.y >= floor - .005) { levels[column]++; p.vy = 0; }
-        c.fillStyle = '#ffe2a0'; c.beginPath(); c.arc(p.x * w, p.y * h, 1.4, 0, Math.PI * 2); c.fill();
+        p.vy += dt * (sucking ? .1 : .8);
+        p.y = Math.min(floor, p.y + p.vy * dt);
+        if (p.y >= floor - .005 && !sucking) {
+          const neighbors = [column - 1, column + 1].filter(n => n >= 0 && n < columns && levels[n] + 2 < levels[column]);
+          if (neighbors.length) {
+            column = neighbors.sort((a, b) => levels[a] - levels[b])[0];
+            p.x = (column + .5) / columns;
+          } else { levels[column]++; p.vy = 0; }
+        }
+        c.fillStyle = p.shade > .6 ? '#fff0bd' : '#dcb67d'; c.beginPath(); c.arc(p.x * w, p.y * h, 1.35, 0, Math.PI * 2); c.fill();
       });
     }
   }
   requestAnimationFrame(drawPlaygrounds);
 }
 requestAnimationFrame(drawPlaygrounds);
+
+const atmospheres = ['water', 'counter', 'decision'].map(kind => {
+  const surface = document.getElementById(kind + 'ExtraCanvas');
+  return { kind, canvas: surface, ctx: surface.getContext('2d'), time: 0 };
+});
+function drawAtmospheres(dt) {
+  for (const item of atmospheres) {
+    if (document.hidden || quietMode || !shouldDraw(item.canvas)) continue;
+    item.time += dt;
+    const c = item.ctx; sizeMiniCanvas(item.canvas, c);
+    const w = item.canvas.viewWidth, h = item.canvas.viewHeight, t = item.time;
+    c.clearRect(0, 0, w, h);
+    const dot = (x, y, color, alpha = .8, r = 1.2) => {
+      c.fillStyle = color; c.globalAlpha = alpha; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+    };
+    if (item.kind === 'water') {
+      for (let jelly = 0; jelly < 3; jelly++) {
+        const cx = w * (.22 + jelly * .28) + Math.sin(t * .3 + jelly) * 7;
+        const cy = h * (.32 + (jelly % 2) * .15) + Math.sin(t * .7 + jelly) * 10;
+        const size = Math.min(w / 8, h / 5) * (1 + Math.sin(t * 1.1 + jelly) * .08);
+        for (let i = 0; i < 65; i++) {
+          const a = i / 64 * Math.PI;
+          dot(cx + Math.cos(a) * size, cy - Math.sin(a) * size * .7, '#a4dfff');
+        }
+        for (let strand = 0; strand < 5; strand++) for (let i = 0; i < 22; i++) {
+          const s = i / 22;
+          dot(cx + (strand - 2) * size * .32 + Math.sin(s * 6 - t * 1.3 + strand) * size * s * .16,
+            cy + s * size * 1.8, '#b5a6ef', .75 * (1 - s) + .1, 1);
+        }
+      }
+    } else if (item.kind === 'counter') {
+      for (let i = 0; i < 360; i++) {
+        const a = i / 360 * Math.PI * 2;
+        const r = Math.min(w, h) * .37 * (.55 + .4 * Math.sin(a * 6 + t * .45));
+        dot(w / 2 + Math.cos(a + t * .09) * r, h / 2 + Math.sin(a + t * .09) * r,
+          i % 3 ? '#c6a3ff' : '#8cdded', .7, 1.2);
+      }
+    } else {
+      for (let row = 0; row < 11; row++) for (let i = 0; i < 42; i++) {
+        const x = i / 41 * w;
+        const y = h * .2 + row * h * .057 + Math.sin(i * .12 + row * .22 - t * .25) * h * .09;
+        dot(x, y, row % 3 ? '#ddbe88' : '#99b9dd', .3 + row / 18, 1);
+      }
+    }
+    c.globalAlpha = 1;
+  }
+}
+
+const widgetCards = [...document.querySelectorAll('.particle-widget')];
+let favoriteWidgets = [], onlyFavorites = false, productiveOnly = false;
+const productiveIds = ['timerCanvas', 'rainCanvas', 'auroraCanvas', 'clockCanvas', 'diceExtraCanvas', 'dateExtraCanvas', 'noteExtraCanvas'];
+try {
+  const stored = JSON.parse(localStorage.getItem('neon-favorites') || '[]');
+  if (Array.isArray(stored)) favoriteWidgets = stored.filter(value => typeof value === 'string');
+} catch {}
+function filterWidgets() {
+  const query = document.querySelector('#widgetSearch').value.trim().toLocaleLowerCase('de-DE');
+  let visible = 0;
+  widgetCards.forEach(card => {
+    const matches = card.querySelector('h3').textContent.toLocaleLowerCase('de-DE').includes(query);
+    const id = card.querySelector('canvas').id;
+    card.hidden = !matches || (onlyFavorites && !favoriteWidgets.includes(id)) || (productiveOnly && !productiveIds.includes(id));
+    if (!card.hidden) visible++;
+  });
+  document.querySelector('#widgetResults').textContent = visible ? visible + ' Widgets angezeigt' : 'Keine passenden Widgets. Wähle „Alle anzeigen“.';
+}
+widgetCards.forEach(card => {
+  const id = card.querySelector('canvas').id;
+  const button = document.createElement('button');
+  button.type = 'button'; button.className = 'favorite-button';
+  function label() {
+    const selected = favoriteWidgets.includes(id);
+    button.setAttribute('aria-pressed', String(selected));
+    button.textContent = selected ? '★ Favorit' : '☆ Als Favorit merken';
+  }
+  label(); card.append(button);
+  button.addEventListener('click', () => {
+    favoriteWidgets = favoriteWidgets.includes(id) ? favoriteWidgets.filter(value => value !== id) : [...favoriteWidgets, id];
+    try { localStorage.setItem('neon-favorites', JSON.stringify(favoriteWidgets)); } catch {}
+    label();
+    if (!fullview) filterWidgets();
+  });
+});
+document.querySelector('#widgetSearch').addEventListener('input', filterWidgets);
+document.querySelector('#favoritesOnly').addEventListener('click', event => {
+  onlyFavorites = !onlyFavorites;
+  event.currentTarget.setAttribute('aria-pressed', String(onlyFavorites));
+  filterWidgets();
+});
+document.querySelector('#clearWidgetFilter').addEventListener('click', () => {
+  productiveOnly = false;
+  document.querySelector('#productiveOnly').setAttribute('aria-pressed', 'false');
+  onlyFavorites = false;
+  document.querySelector('#widgetSearch').value = '';
+  document.querySelector('#favoritesOnly').setAttribute('aria-pressed', 'false');
+  filterWidgets();
+});
+filterWidgets();
+
+document.querySelector('#clockCanvas').closest('article').id = 'clockCard';
+document.querySelectorAll('.quick-menu a').forEach(link => link.addEventListener('click', () => {
+  const target = document.querySelector(link.getAttribute('href'));
+  if (target?.hidden) document.querySelector('#clearWidgetFilter').click();
+  document.querySelector('.quick-menu').open = false;
+}));
+function refreshReadableTimes() {
+  const now = new Date();
+  document.querySelector('#clockReadable').textContent = now.toLocaleTimeString('de-DE', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: document.querySelector('#clockFormat').value === '12'
+  });
+  document.querySelector('#watchReadable').textContent = durationText(elapsedWatch());
+  document.querySelector('#timerReadable').textContent = String(Math.floor(timerSeconds / 60)).padStart(2, '0') + ':' + String(timerSeconds % 60).padStart(2, '0');
+}
+document.querySelector('#clockFormat').addEventListener('change', refreshReadableTimes);
+setInterval(refreshReadableTimes, 200);
+refreshReadableTimes();
+
+const extraKinds = ['dice', 'date', 'note'];
+let extraState = { day: new Date().toDateString(), water: 0, counter: 0, dice: 1, decision: '', date: '', note: '' };
+try {
+  const saved = JSON.parse(localStorage.getItem('neon-extra') || '{}');
+  for (const key of ['date', 'note']) if (typeof saved[key] === 'string') extraState[key] = saved[key].slice(0, 2000);
+  if (saved.day === extraState.day) for (const key of ['water', 'counter']) if (Number.isFinite(saved[key])) extraState[key] = Math.max(0, Math.min(999, saved[key]));
+} catch {}
+document.querySelector('#quickNote').value = extraState.note;
+document.querySelector('#targetDate').value = extraState.date;
+function saveExtra() { try { localStorage.setItem('neon-extra', JSON.stringify(extraState)); } catch {} }
+function drawExtra() {
+  if (extraState.day !== new Date().toDateString()) { extraState.day = new Date().toDateString(); extraState.water = extraState.counter = 0; saveExtra(); }
+  for (const kind of extraKinds) {
+    const surface = document.getElementById(kind + 'ExtraCanvas');
+    if (!shouldDraw(surface)) continue;
+    const c = surface.getContext('2d'); sizeMiniCanvas(surface, c);
+    const w = surface.viewWidth, h = surface.viewHeight;
+    c.clearRect(0, 0, w, h);
+    let value = extraState[kind], label = '';
+    if (kind === 'date') {
+      const date = new Date(extraState.date + 'T00:00:00');
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      value = Number.isFinite(date.getTime()) ? Math.round((Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())) / 86400000) : 0;
+      label = extraState.date ? value < 0 ? 'Vor ' + Math.abs(value) + ' Tagen' : value === 0 ? 'Heute!' : 'Noch ' + value + ' Tage' : 'Wähle dein Datum';
+    } else if (kind === 'note') label = value.length + ' / 2000 Zeichen · lokal gespeichert';
+    else if (kind === 'decision') label = value || 'Trage deine Optionen ein';
+    else label = String(value) + (kind === 'water' ? ' Gläser heute' : kind === 'counter' ? ' heute gezählt' : ' gewürfelt');
+    document.getElementById(kind + 'ExtraOutput').textContent = label;
+    c.fillStyle = '#91ddff';
+    if (['water', 'counter', 'dice', 'date'].includes(kind)) {
+      const text = String(Math.abs(Number(value))).slice(0, 5);
+      const step = Math.min(22, (w - 24) / (text.length * 4), (h - 20) / 5);
+      [...text].forEach((char, digit) => digitMap[char].forEach((row, y) => [...row].forEach((cell, x) => {
+        if (cell !== '1') return;
+        c.beginPath(); c.arc((w - (text.length * 4 - 1) * step) / 2 + (digit * 4 + x + .5) * step, (h - 5 * step) / 2 + (y + .5) * step, step * .27, 0, Math.PI * 2); c.fill();
+      })));
+    } else {
+      for (let i = 0; i < 100; i++) {
+        const angle = i * Math.PI * 2 / 100;
+        c.fillStyle = kind === 'note' && i > value.length / 20 ? '#253b60' : '#a3b5ff';
+        c.beginPath(); c.arc(w / 2 + Math.cos(angle) * Math.min(w, h) * .3, h / 2 + Math.sin(angle) * Math.min(w, h) * .3, 1.8, 0, Math.PI * 2); c.fill();
+      }
+    }
+  }
+}
+document.querySelectorAll('[data-extra]').forEach(button => button.addEventListener('click', () => {
+  const key = button.dataset.extra, step = Number(button.dataset.step);
+  extraState[key] = step ? Math.max(0, Math.min(999, extraState[key] + step)) : 0; saveExtra(); drawExtra();
+}));
+document.querySelector('#rollDice').addEventListener('click', () => { extraState.dice = 1 + Math.floor(Math.random() * 6); drawExtra(); });
+document.querySelector('#targetDate').addEventListener('change', event => { extraState.date = event.target.value; saveExtra(); drawExtra(); });
+document.querySelector('#quickNote').addEventListener('input', event => { extraState.note = event.target.value; saveExtra(); drawExtra(); });
+setInterval(drawExtra, 500);
+drawExtra();
+
+document.querySelector('#productiveOnly').addEventListener('click', event => {
+  productiveOnly = !productiveOnly; event.currentTarget.setAttribute('aria-pressed', String(productiveOnly)); filterWidgets();
+});
+document.querySelector('#backupExport').addEventListener('click', () => {
+  const payload = { format: 'neon-backup', version: 1, tasks, note: extraState.note, favorites: favoriteWidgets,
+    settings: Object.fromEntries(savedControls.map(id => [id, document.getElementById(id).value])) };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
+  const link = document.createElement('a'); link.href = url; link.download = 'neon-sicherung.json'; link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+  document.querySelector('#backupStatus').textContent = 'Download gestartet. Die Datei enthält deine persönlichen Aufgaben und Notizen.';
+});
+document.querySelector('#backupImport').addEventListener('change', async event => {
+  const file = event.target.files[0]; if (!file) return;
+  const status = document.querySelector('#backupStatus');
+  try {
+    if (file.size > 200000) throw new Error('Datei zu groß.');
+    const data = JSON.parse(await file.text());
+    if (data.format !== 'neon-backup' || data.version !== 1 || !Array.isArray(data.tasks) || typeof data.note !== 'string' || !Array.isArray(data.favorites)) throw new Error('Ungültiges Sicherungsformat.');
+    if (data.tasks.some(task => !task || typeof task.text !== 'string' || typeof task.done !== 'boolean')) throw new Error('Ungültige Aufgaben.');
+    const additions = data.tasks.filter(task => !tasks.some(t => t.text === task.text)).map(task => ({ text: task.text.slice(0, 100), done: task.done }));
+    if (tasks.length + additions.length > 50) throw new Error('Import würde die Grenze von 50 Aufgaben überschreiten.');
+    tasks.push(...additions);
+    const keptNote = Boolean(extraState.note && data.note && extraState.note !== data.note);
+    if (!extraState.note) extraState.note = data.note.slice(0, 2000);
+    favoriteWidgets = [...new Set([...favoriteWidgets, ...data.favorites.filter(id => widgetCards.some(card => card.querySelector('canvas').id === id))])];
+    for (const id of savedControls) {
+      const control = document.getElementById(id), value = data.settings?.[id];
+      if (typeof value !== 'string') continue;
+      const valid = control.tagName === 'SELECT' ? [...control.options].some(option => option.value === value)
+        : Number.isFinite(Number(value)) && Number(value) >= Number(control.min) && Number(value) <= Number(control.max);
+      if (valid) { control.value = value; control.dispatchEvent(new Event(control.tagName === 'SELECT' ? 'change' : 'input')); }
+    }
+    renderTasks(); saveExtra(); savePreferences();
+    document.querySelector('#quickNote').value = extraState.note;
+    widgetCards.forEach(card => {
+      const selected = favoriteWidgets.includes(card.querySelector('canvas').id), button = card.querySelector('.favorite-button');
+      button.setAttribute('aria-pressed', String(selected)); button.textContent = selected ? '★ Favorit' : '☆ Als Favorit merken';
+    });
+    try { localStorage.setItem('neon-favorites', JSON.stringify(favoriteWidgets)); } catch {}
+    filterWidgets(); drawExtra();
+    status.textContent = additions.length + ' Aufgaben ergänzt; Einstellungen und Favoriten übernommen.' + (keptNote ? ' Deine vorhandene Notiz wurde behalten.' : ' Notiz übernommen.');
+  } catch (error) { status.textContent = 'Import nicht möglich: ' + error.message; }
+  event.target.value = '';
+});

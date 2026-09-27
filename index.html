@@ -17,7 +17,8 @@
         <button id="surpriseMix" class="action-button">✦ Zufalls-Mix</button>
         <a class="section-link" href="#labTitle">Zu den Widgets ↓</a>
       </nav>
-      <header class="intro">
+      <details class="quick-menu"><summary>☰ Schnellmenü</summary><nav aria-label="Schnellnavigation"><a href="#shapes">✦ Formen & Sandbox</a><a href="#focusCard">⌛ Fokus-Timer</a><a href="#labTitle">▦ Alle Widgets</a><a href="#clockCard">◷ Live-Uhr</a></nav></details>
+      <header class="intro" id="shapes">
         <p class="eyebrow">INTERAKTIVE KUNST</p>
         <h1>Neon <span>Particles</span></h1>
         <p class="subtitle">Wähle eine Form – tausende leuchtende Punkte finden ihren Platz.</p>
@@ -89,7 +90,15 @@
           <p>Feuer, Zeit und Energie – komplett aus leuchtenden Punkten.</p>
         </header>
 
+        <div class="widget-filter">
+          <label for="widgetSearch">Widget suchen<input id="widgetSearch" type="search" placeholder="Zum Beispiel Feuer oder Timer" /></label>
+          <button id="favoritesOnly" class="action-button" aria-pressed="false">☆ Nur Favoriten</button>
+          <button id="productiveOnly" class="action-button" aria-pressed="false">✓ Nur Werkzeuge</button>
+          <button id="clearWidgetFilter" class="action-button">Alle anzeigen</button>
+        </div>
+        <p id="widgetResults" class="widget-note" role="status"></p>
         <div class="widget-grid">
+        
           <article class="particle-widget fire-widget">
             <div class="widget-head">
               <div><span class="widget-icon fire-icon">●</span><h3>Neon Fire</h3></div>
@@ -104,12 +113,13 @@
             </div>
           </article>
 
-          <article class="particle-widget timer-widget">
+          <article class="particle-widget timer-widget" id="focusCard">
             <div class="widget-head">
               <div><span class="widget-icon timer-icon">◷</span><h3>Particle Timer</h3></div>
               <span class="widget-tag">FOCUS</span>
             </div>
             <canvas id="timerCanvas" aria-label="Sanduhr und Timer aus Punkten"></canvas>
+            <output id="timerReadable" class="time-readable" aria-label="Verbleibende Fokuszeit">01:00</output>
             <button id="flipHourglass" class="mini-button">⌛ Umdrehen & neu starten</button>
             <label class="focus-setting" for="focusMinutes">Fokusdauer <select id="focusMinutes"><option value="1">1 Minute</option><option value="5">5 Minuten</option><option value="15">15 Minuten</option><option value="25">25 Minuten</option><option value="45">45 Minuten</option></select></label>
             <p id="focusStatus" class="widget-note" role="status">Bereit für deinen Fokus</p>
@@ -138,12 +148,14 @@
             <canvas id="rainCanvas" aria-label="Aufgabenfortschritt als Punktering"></canvas>
             <p id="taskStatus" class="widget-note" role="status">Noch keine Aufgaben</p>
             <form id="taskForm" class="task-form"><input id="taskText" maxlength="100" required placeholder="Was möchtest du erledigen?" aria-label="Neue Aufgabe" /><button class="mini-button">＋</button></form>
+            <label class="focus-setting">Ansicht<select id="taskFilter"><option value="all">Alle Aufgaben</option><option value="open">Noch offen</option><option value="done">Erledigt</option></select></label>
             <ul id="taskList" class="task-list"></ul>
             <p id="taskStorage" class="widget-note">Lokal in diesem Browser gespeichert</p>
           </article>
           <article class="particle-widget">
             <div class="widget-head"><div><span class="widget-icon wave-icon">◷</span><h3>Stoppuhr</h3></div></div>
             <canvas id="auroraCanvas" aria-label="Stoppuhr aus Punkten"></canvas>
+            <output id="watchReadable" class="time-readable" aria-label="Gemessene Zeit">00:00:00</output>
             <div class="timer-actions"><button id="stopwatchStart" class="mini-button">Start</button><button id="stopwatchLap" class="mini-button" disabled>Runde</button><button id="stopwatchReset" class="mini-button">Reset</button></div>
             <ol id="lapList" class="lap-list" aria-label="Letzte zehn Rundenzeiten"></ol>
           </article>
@@ -170,6 +182,8 @@
           <article class="particle-widget">
             <div class="widget-head"><div><span class="widget-icon timer-icon">◷</span><h3>Live-Uhr</h3></div></div>
             <canvas id="clockCanvas" aria-label="Aktuelle lokale Uhrzeit aus Punkten"></canvas>
+            <output id="clockReadable" class="time-readable" aria-label="Lokale Uhrzeit"></output>
+            <label class="focus-setting">Zeitformat<select id="clockFormat"><option value="24">24 Stunden</option><option value="12">12 Stunden</option></select></label>
             <p id="clockDate" class="widget-note">Lokale Zeit deines Geräts</p>
           </article>
           <article class="particle-widget">
@@ -185,12 +199,20 @@
           <article class="particle-widget">
             <div class="widget-head"><div><h3>Sternensand</h3></div></div>
             <canvas id="sandCanvas" aria-label="Links gedrückt halten zum Streuen, rechts zum Saugen"></canvas>
+            <label class="fire-controls" for="sandAmount">Streumenge<input id="sandAmount" type="range" min="20" max="250" value="100" step="10" /></label>
             <div class="timer-actions"><button id="sandPour" class="mini-button" aria-pressed="true">Streuen</button><button id="sandSuck" class="mini-button" aria-pressed="false">Saugen</button><button id="sandClear" class="mini-button">Leeren</button></div>
             <p class="widget-note">LMB: Streuen · RMB: Saugen · Handy: Werkzeug wählen</p>
           </article>
+          <article class="particle-widget extra-widget"><div class="widget-head"><div><h3>Quallenschwarm</h3></div></div><canvas id="waterExtraCanvas" aria-label="Quallenschwarm aus Punkten"></canvas><p class="widget-note">Schwebende Lichter in der Tiefsee</p></article>
+          <article class="particle-widget extra-widget"><div class="widget-head"><div><h3>Blütenwirbel</h3></div></div><canvas id="counterExtraCanvas" aria-label="Blütenwirbel aus Punkten"></canvas><p class="widget-note">Geometrie in sanfter Bewegung</p></article>
+          <article class="particle-widget extra-widget"><div class="widget-head"><div><h3>Neon-Würfel</h3></div></div><canvas id="diceExtraCanvas" aria-label="Neon-Würfel aus Punkten"></canvas><output id="diceExtraOutput" class="extra-output" aria-live="polite"></output><button id="rollDice" class="mini-button">Würfeln</button></article>
+          <article class="particle-widget extra-widget"><div class="widget-head"><div><h3>Lichtdünen</h3></div></div><canvas id="decisionExtraCanvas" aria-label="Lichtdünen aus Punkten"></canvas><p class="widget-note">Wellen aus goldenen Punkten</p></article>
+          <article class="particle-widget extra-widget"><div class="widget-head"><div><h3>Termin-Countdown</h3></div></div><canvas id="dateExtraCanvas" aria-label="Termin-Countdown aus Punkten"></canvas><output id="dateExtraOutput" class="extra-output" aria-live="polite"></output><label>Zieldatum<input id="targetDate" type="date" /></label></article>
+          <article class="particle-widget extra-widget"><div class="widget-head"><div><h3>Gedankenparkplatz</h3></div></div><canvas id="noteExtraCanvas" aria-label="Gedankenparkplatz aus Punkten"></canvas><output id="noteExtraOutput" class="extra-output" aria-live="polite"></output><label>Deine Notiz<textarea id="quickNote" rows="4" maxlength="2000" placeholder="Ideen festhalten …"></textarea></label></article>
         </div>
       </section>
 
+      <details class="studio-panel"><summary>Daten sichern & übertragen</summary><p>Exportiere Aufgaben, Notizen, Favoriten und Einstellungen als JSON-Datei. Beim Import werden Aufgaben ergänzt; eine vorhandene Notiz bleibt erhalten.</p><div class="studio-actions"><button id="backupExport" class="action-button">Sicherung herunterladen</button><label class="action-button">Sicherung importieren<input id="backupImport" type="file" accept=".json,application/json" /></label></div><p id="backupStatus" role="status"></p></details>
       <footer>MADE WITH LIGHT <span>✦</span></footer>
       <a class="back-top" href="#" aria-label="Zurück nach oben">↑ Nach oben</a>
     </main>
