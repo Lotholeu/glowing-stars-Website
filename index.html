@@ -21,14 +21,80 @@
         <button class="shape-button active" data-shape="heart" aria-pressed="true"><span>♥</span> Herz</button>
         <button class="shape-button" data-shape="star" aria-pressed="false"><span>★</span> Stern</button>
         <button class="shape-button" data-shape="circle" aria-pressed="false"><span>●</span> Kreis</button>
+        <button class="shape-button" data-shape="moon" aria-pressed="false"><span>☾</span> Mond</button>
+        <button class="shape-button" data-shape="bolt" aria-pressed="false"><span>ϟ</span> Blitz</button>
+        <button class="shape-button" data-shape="infinity" aria-pressed="false"><span>∞</span> Unendlich</button>
+        <button class="shape-button" data-shape="flower" aria-pressed="false"><span>✿</span> Blume</button>
         <button class="shape-button" data-shape="wave" aria-pressed="false"><span>〰</span> Welle</button>
-        <button class="shape-button" data-shape="spiral" aria-pressed="false"><span>◌</span> Spiral</button>
+        <button class="shape-button" data-shape="spiral" aria-pressed="false"><span>◌</span> Spirale</button>
       </nav>
+
+      <section class="controls" aria-label="Partikel-Einstellungen">
+        <div class="control-group palette-control">
+          <span class="control-title">Farbwelt</span>
+          <div class="swatches" role="group" aria-label="Farbwelt auswählen">
+            <button class="swatch active" data-palette="shape" aria-label="Formfarben" title="Formfarben"></button>
+            <button class="swatch" data-palette="ocean" aria-label="Ozean" title="Ozean"></button>
+            <button class="swatch" data-palette="aurora" aria-label="Aurora" title="Aurora"></button>
+            <button class="swatch" data-palette="sunset" aria-label="Sonnenuntergang" title="Sonnenuntergang"></button>
+          </div>
+        </div>
+        <label class="control-group density-control">
+          <span class="control-title">Dichte <output id="densityValue">1200</output></span>
+          <input id="density" type="range" min="400" max="2000" step="100" value="1200" />
+        </label>
+        <button id="autoPlay" class="action-button" type="button" aria-pressed="false"><span>▶</span> Auto-Modus</button>
+        <button id="randomize" class="action-button" type="button"><span>✦</span> Zufall</button>
+      </section>
 
       <section class="particle-stage" aria-label="Animiertes Punktebild">
         <canvas id="particleCanvas"></canvas>
         <div class="stage-glow"></div>
-        <p class="stage-label">TIPPE AUF EINE FORM</p>
+        <div class="stage-status"><span class="status-dot"></span><span id="shapeName">HERZ</span></div>
+        <p class="stage-label">BEWEGE DIE MAUS DURCH DIE PARTIKEL</p>
+      </section>
+
+      <section class="particle-lab" aria-labelledby="labTitle">
+        <header class="lab-heading">
+          <div>
+            <p class="eyebrow">PARTICLE LAB</p>
+            <h2 id="labTitle">Lebendige <span>Widgets</span></h2>
+          </div>
+          <p>Feuer, Zeit und Energie – komplett aus leuchtenden Punkten.</p>
+        </header>
+
+        <div class="widget-grid">
+          <article class="particle-widget fire-widget">
+            <div class="widget-head">
+              <div><span class="widget-icon fire-icon">●</span><h3>Neon Fire</h3></div>
+              <span class="live-badge"><i></i> LIVE</span>
+            </div>
+            <canvas id="fireCanvas" aria-label="Animiertes Feuer aus Punkten"></canvas>
+            <p class="widget-note">Schnelle Funken · immer in Bewegung</p>
+          </article>
+
+          <article class="particle-widget timer-widget">
+            <div class="widget-head">
+              <div><span class="widget-icon timer-icon">◷</span><h3>Particle Timer</h3></div>
+              <span class="widget-tag">FOCUS</span>
+            </div>
+            <canvas id="timerCanvas" aria-label="Timer aus Punkten"></canvas>
+            <div class="timer-actions">
+              <button id="timerStart" class="mini-button" type="button">▶ Start</button>
+              <button id="timerAdd" class="mini-button" type="button">+ 1 Min</button>
+              <button id="timerReset" class="mini-button icon-only" type="button" aria-label="Timer zurücksetzen">↻</button>
+            </div>
+          </article>
+
+          <article class="particle-widget wave-widget">
+            <div class="widget-head">
+              <div><span class="widget-icon wave-icon">≈</span><h3>Energy Flow</h3></div>
+              <span class="widget-tag">ACTIVE</span>
+            </div>
+            <canvas id="waveCanvas" aria-label="Fließende Energiewelle aus Punkten"></canvas>
+            <button id="waveBoost" class="boost-button" type="button"><span>ϟ</span> Energie-Impuls</button>
+          </article>
+        </div>
       </section>
 
       <footer>MADE WITH LIGHT <span>✦</span></footer>
